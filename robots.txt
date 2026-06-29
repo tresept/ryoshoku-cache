@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://tresept.github.io/ryoshoku-cache/sitemap.xml
