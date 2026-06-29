@@ -1,0 +1,67 @@
+name: Fetch dormitory menu PDF
+
+on:
+  schedule:
+    # 月曜: 02:07, 04:07, 06:07, 08:07, 10:07, 12:07, 14:07, 18:07 JST
+    - cron: "7 2,4,6,8,10,12,14,18 * * 1"
+      timezone: "Asia/Tokyo"
+
+    # 火〜土: 02:07 JST
+    - cron: "7 2 * * 2-6"
+      timezone: "Asia/Tokyo"
+
+    # 日曜: 02:07 JST
+    - cron: "7 2 * * 0"
+      timezone: "Asia/Tokyo"
+
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Archive behavior"
+        required: false
+        default: "auto"
+        type: choice
+        options:
+          - auto
+          - replace-latest-archive
+          - no-archive
+      initial_week_start:
+        description: "Initial archive week start, YYYY-MM-DD. Used only when archive is empty."
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fetch-dormitory-menu
+  cancel-in-progress: true
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch PDF
+        env:
+          MODE: ${{ inputs.mode || 'auto' }}
+          INITIAL_WEEK_START: ${{ inputs.initial_week_start || '' }}
+        run: |
+          python scripts/fetch_pdf.py
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add latest.pdf state.json archive/
+          git diff --cached --quiet && echo "No changes to commit" || git commit -m "Update dormitory menu PDF"
+          git push
