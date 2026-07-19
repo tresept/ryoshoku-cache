@@ -50,6 +50,11 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install CA bundle for HTTPS fetch
+        run: |
+          python -m pip install --upgrade certifi
+          echo "SSL_CERT_FILE=$(python -c 'import certifi; print(certifi.where())')" >> "$GITHUB_ENV"
+
       - name: Fetch PDF
         env:
           MODE: ${{ inputs.mode || 'auto' }}
